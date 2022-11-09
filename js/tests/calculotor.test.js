@@ -1,14 +1,14 @@
-const test = require('tape')
 const Calculator = require('../calculator')
 
-class AuthorizerTest {
-  authorize () {
-    return false;
-  }
+const authorizer = {
+  authorize : jest.fn().mockReturnValue(false),
 }
 
-test('should throw when not authorized', (t) => {
-  const calculator = new Calculator(new AuthorizerTest())
-  t.throws(() => calculator.divide(3, 4), 'Not authorized')
-  t.end()
+
+describe('Calculator', ()=>{
+  test('should throw when not authorized', ()=>{
+    const calculator = new Calculator(authorizer)
+    expect(() => calculator.divide(3, 4)).toThrow('Not authorized')
+    expect(authorizer.authorize).toHaveBeenCalledTimes(1)
+  })
 })

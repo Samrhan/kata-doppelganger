@@ -1,41 +1,35 @@
 const sender = require('../mail-sender')
-const test = require('tape')
 const { MailSender, Request } = sender
-test('send v1', (t) => {
-  let call = 0
-  const httpClient = {
-    post: (url, request) => {
-      t.equal(request instanceof Request, true, 'should be a request')
-      t.equal(url, 'https://api.mailsender.com/v3/', 'should be the url')
-      t.equal(request.name, 'John', 'should be the name')
-      t.equal(request.email, 'john.doe@live.com', 'should be the mail')
-      t.equal(request.subject, 'New notification', 'should be the subject')
-      t.equal(request.message, 'Hello world', 'should be the message')
-      call++
-    }
-  }
-  const mailSender = new MailSender(httpClient)
-  mailSender.sendV1({ name: 'John', email: 'john.doe@live.com' }, 'Hello world')
-  t.equal(call, 1, 'should call the http client once')
-  t.end()
-})
 
-test('send v2', (t) => {
-  let call = 0
-  const httpClient = {
-    post: (url, request) => {
-      t.equal(request instanceof Request, true, 'should be a request')
-      t.equal(url, 'https://api.mailsender.com/v3/', 'should be the url')
-      t.equal(request.name, 'John', 'should be the name')
-      t.equal(request.email, 'john.doe@live.com', 'should be the mail')
-      t.equal(request.subject, 'New notification', 'should be the subject')
-      t.equal(request.message, 'Hello world', 'should be the message')
-      call++
-      return { code: call === 1 ? 503 : 200 }
-    }
-  }
+const httpClient = {
+  post: jest.fn()
+}
+
+describe('Mail Sender', () => {
   const mailSender = new MailSender(httpClient)
-  mailSender.sendV2({ name: 'John', email: 'john.doe@live.com' }, 'Hello world')
-  t.equal(call, 2, 'should be called twice')
-  t.end()
+
+  beforeEach(() => {
+    httpClient.post.mockClear()
+  })
+
+  it('should pass the argument in the right order on V1', () => {
+    const user = { name: 'John', email: 'john.doe@live.com' }
+    const message = 'Hello world'
+    const request = new Request(user.name, user.email, 'New notification', message)
+
+    mailSender.sendV1(user, message)
+    expect(httpClient.post).toHaveBeenCalledTimes(1)
+    expect(httpClient.post).toHaveBeenCalledWith('https://api.mailsender.com/v3/', request)
+  })
+
+  it('should call the http client again on 503', () => {
+    const user = { name: 'John', email: 'john.doe@live.com' }
+    const message = 'Hello world'
+    const request = new Request(user.name, user.email, 'New notification', message)
+
+    httpClient.post.mockReturnValueOnce({ code: 503 })
+    mailSender.sendV2(user, message)
+    expect(httpClient.post).toHaveBeenCalledTimes(2)
+    expect(httpClient.post).toHaveBeenNthCalledWith(2, 'https://api.mailsender.com/v3/', request)
+  })
 })

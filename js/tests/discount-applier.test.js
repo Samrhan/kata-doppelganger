@@ -1,37 +1,24 @@
-const test = require('tape')
 const DiscountApplier = require('../discount-applier')
-
-test('apply v1', (t) => {
-  let call = 0
-  const users = ['user1']
-  const discount = '10%'
-  const notifier = {
-    notify: (user, message) => {
-      call += 1
-      t.equals(user, users[0], 'should notify user1')
-    }
-  }
+const notifier = {
+  notify: jest.fn()
+}
+describe('Discount Applier', () => {
   const discountApplier = new DiscountApplier(notifier)
-
-  discountApplier.applyV1(discount, users, notifier)
-  t.equals(call, 1, 'should notify 1 user')
-  t.end()
-})
-
-test('apply v2', (t) => {
-  let call = 0
-  const users = ['user1', 'user2']
-  const discount = '10%'
-  const notifier = {
-    notify: (user, message) => {
-      t.equals(user, users[call], 'should notify the right user')
-      t.equals(message, `You've got a new discount of ${discount}`, 'should notify the right message')
-      call += 1
-    }
-  }
-  const discountApplier = new DiscountApplier(notifier)
-
-  discountApplier.applyV1(discount, users, notifier)
-  t.equals(call, 2, 'should notify 2 user')
-  t.end()
+  beforeEach(() => {
+    notifier.notify.mockClear()
+  })
+  it('should call notify nth time on V1', () => {
+    const users = ['user1']
+    const discount = '10%'
+    discountApplier.applyV1(discount, users)
+    expect(notifier.notify).toHaveBeenCalledTimes(1)
+  })
+  it('should notify each user on V2', () => {
+    const users = ['user1', 'user2']
+    const discount = '10%'
+    discountApplier.applyV2(discount, users)
+    expect(notifier.notify).toHaveBeenCalledTimes(2)
+    expect(notifier.notify).toHaveBeenCalledWith(users[0], `You've got a new discount of ${discount}`)
+    expect(notifier.notify).toHaveBeenCalledWith(users[1], `You've got a new discount of ${discount}`)
+  })
 })
